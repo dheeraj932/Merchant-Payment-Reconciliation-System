@@ -28,9 +28,6 @@ public class JwtTokenProvider {
     }
 
     // Token Generation
-    /**@param authentication
-       @return
-     */
     public String generateToken(Authentication authentication) {
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         String role = userDetails.getAuthorities()
@@ -52,24 +49,15 @@ public class JwtTokenProvider {
     }
 
     // Token Parsing
-    /**@param token
-       @return
-     */
     public String getUsernameFromToken(String token) {
         return parseClaims(token).getSubject();
     }
 
-    /**@param token
-       @return
-     */
     public String getRoleFromToken(String token) {
         return parseClaims(token).get("role", String.class);
     }
 
     // Token Validation
-    /**@param token
-       @return
-     */
     public boolean validateToken(String token) {
         try {
             parseClaims(token);
@@ -92,5 +80,7 @@ public class JwtTokenProvider {
         return Jwts.parser()
                 .verifyWith(secretKey)
                 .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 }
