@@ -74,6 +74,7 @@ dependencies{
 
     //H2 in-memory
     testRuntimeOnly("com.h2database:h2")
+    runtimeOnly("com.h2database:h2")
 
     //Lombok in tests
     testCompileOnly("org.projectlombok:lombok")

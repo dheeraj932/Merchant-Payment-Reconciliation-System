@@ -1,0 +1,41 @@
+# ================================================================
+# MPRS Dev Profile — H2 in-memory database
+# Activated via: --spring.profiles.active=dev
+# Use ONLY for local development/testing. Never in production.
+# ================================================================
+
+spring:
+
+  # ── Swap PostgreSQL for H2 in-memory ─────────────────────────
+  datasource:
+    url: jdbc:h2:mem:mprsdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  # ── H2 Console (browser UI at /h2-console) ───────────────────
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  # ── Let Hibernate create schema (bypasses Flyway for dev) ────
+  jpa:
+    hibernate:
+      ddl-auto: create-drop     # creates tables on start, drops on stop
+    show-sql: true              # print SQL to console for debugging
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+
+  # ── Disable Flyway for dev profile ───────────────────────────
+  flyway:
+    enabled: false
+
+# ── Logging — more verbose for dev ───────────────────────────────
+logging:
+  level:
+    com.mprs: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
