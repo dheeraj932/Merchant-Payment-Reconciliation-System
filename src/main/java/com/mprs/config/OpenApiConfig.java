@@ -12,12 +12,12 @@ import org.springframework.context.annotation.Configuration;
 @OpenAPIDefinition(
         info = @Info(
                 title = "Merchant Payment Reconciliation System API",
-                version = "v1",
-                description = "APIs for transaction ingestion, payouts, and reconciliation",
-                contact = @Contact(
-                        name = "MPRS",
-                        email = "support@example.com"
-                )
+                version = "v1"
+                // description = "APIs for transaction ingestion, payouts, and reconciliation",
+                // contact = @Contact(
+                //         name = "MPRS",
+                //         email = "support@example.com"
+                // )
         ),
         security = {
                 @SecurityRequirement(name = "bearerAuth")

@@ -27,7 +27,7 @@ public class SecurityConfig {
     
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final UserDetailsService userDetailsService;
-    private final AuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    //private final AuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     private static final String[] PUBLIC_URLS = {
         "/api/v1/auth/**",
@@ -44,9 +44,9 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
         .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-        .exceptionHandling(ex -> ex
-                .authenticationEntryPoint(jwtAuthenticationEntryPoint)
-        )
+        // .exceptionHandling(ex -> ex
+        //         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+        // )
 
         .authorizeHttpRequests(auth -> auth
                 .requestMatchers(PUBLIC_URLS).permitAll()
