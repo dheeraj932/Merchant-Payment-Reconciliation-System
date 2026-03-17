@@ -27,7 +27,7 @@ import java.util.List;
  * REST controller for payout ingestion and querying.
  *
  * POST /api/v1/payouts/bulk  — ADMIN / SYSTEM only
- * GET  /api/v1/payouts       — all authenticated roles (read-only for FINANCE_ANALYST)
+ * GET  /api/v1/payouts       — all authenticated roles
  */
 @Slf4j
 @RestController
@@ -39,7 +39,7 @@ public class PayoutController {
 
     private final PayoutService payoutService;
 
-    // ── Request DTOs ─────────────────────────────────────────────
+    // ── Request DTOs ──────────────────────────────────────────────
 
     /**
      * Single payout item in the bulk upload payload.
@@ -54,19 +54,18 @@ public class PayoutController {
             BigDecimal payoutAmount,
 
             @NotNull(message = "payout_date is required")
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate payoutDate
     ) {}
 
     /**
-     * Bulk upload request wrapper for payouts.
+     * Bulk upload request wrapper.
      */
     public record BulkPayoutRequest(
             @NotEmpty(message = "payouts list must not be empty")
             List<@Valid PayoutItemRequest> payouts
     ) {}
 
-    // ── Endpoints ────────────────────────────────────────────────
+    // ── Endpoints ─────────────────────────────────────────────────
 
     /**
      * POST /api/v1/payouts/bulk
@@ -74,12 +73,13 @@ public class PayoutController {
      * Ingests a batch of payout records.
      * Requires ADMIN or SYSTEM role (enforced by SecurityConfig).
      *
-     * Returns a summary of how many were saved, skipped (duplicates), or errored.
+     * Duplicate payouts are flagged as errors — not silently skipped —
+     * because paying a merchant twice is a critical financial issue.
      */
     @PostMapping("/bulk")
     @Operation(
-            summary = "Bulk upload payouts",
-            description = "Ingest multiple payout records. Duplicate payouts per transaction_id are skipped."
+            summary     = "Bulk upload payouts",
+            description = "Ingest multiple payout records. Duplicates are flagged as errors."
     )
     public ResponseEntity<BulkIngestionResult> bulkUpload(
             @Valid @RequestBody BulkPayoutRequest request,
@@ -88,6 +88,7 @@ public class PayoutController {
         log.info("Bulk payout upload by user: {} — {} records",
                 currentUser.getUsername(), request.payouts().size());
 
+        // Map controller DTOs → service DTOs
         List<PayoutRequest> serviceRequests = request.payouts()
                 .stream()
                 .map(item -> new PayoutRequest(
@@ -106,10 +107,11 @@ public class PayoutController {
      * GET /api/v1/payouts
      *
      * Returns payouts, optionally filtered by payout date range.
+     * All authenticated roles can access this endpoint.
      */
     @GetMapping
     @Operation(
-            summary = "Query payouts",
+            summary     = "Query payouts",
             description = "Returns all payouts. Optionally filter by payout date range."
     )
     public ResponseEntity<List<Payout>> getPayouts(
@@ -117,8 +119,8 @@ public class PayoutController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
 
             @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
-    ) {
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
         List<Payout> results;
 
         if (startDate != null && endDate != null) {
@@ -130,4 +132,3 @@ public class PayoutController {
         return ResponseEntity.ok(results);
     }
 }
-

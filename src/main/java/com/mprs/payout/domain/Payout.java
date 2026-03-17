@@ -6,13 +6,16 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * JPA entity representing a payout record.
- * Maps to the 'payouts' table defined in the initial Flyway migration.
+ * JPA entity representing a payout made to a merchant.
+ * Maps to the 'payouts' table created by Flyway migration V1.
  *
- * Business key: transactionId (unique per transaction).
+ * Each payout links to exactly one transaction via transaction_id.
+ * The UNIQUE constraint on transaction_id in the DB enforces
+ * that a transaction can only be paid once.
  */
 @Getter
 @Setter
@@ -26,32 +29,33 @@ public class Payout {
     private Long id;
 
     /**
-     * Identifier of the upstream transaction this payout belongs to.
-     * Unique per transaction — duplicate payouts are rejected at ingestion time.
+     * References the transaction this payout is for.
+     * Kept as a plain string to avoid tight coupling between modules.
+     * The reconciliation engine does the joining logic explicitly.
      */
     @Column(name = "transaction_id", nullable = false, unique = true, length = 100)
     private String transactionId;
 
     /**
-     * Amount paid out to the merchant.
+     * Actual amount paid out to the merchant.
+     * May differ from expected — difference is the variance.
      */
     @Column(name = "payout_amount", nullable = false, precision = 19, scale = 4)
     private BigDecimal payoutAmount;
 
     /**
-     * Payout date stored as ISO-8601 string (YYYY-MM-DD).
-     * The underlying column is VARCHAR; reconciliation uses lexical range filtering.
+     * Date the payout was transferred to the merchant.
+     * Used as the primary filter for reconciliation windows.
      */
-    @Column(name = "payout_date", nullable = false, length = 50)
-    private String payoutDate;
+    @Column(name = "payout_date", nullable = false)
+    private LocalDate payoutDate;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    public Payout(String transactionId, BigDecimal payoutAmount, String payoutDate) {
+    public Payout(String transactionId, BigDecimal payoutAmount, LocalDate payoutDate) {
         this.transactionId = transactionId;
-        this.payoutAmount = payoutAmount;
-        this.payoutDate = payoutDate;
+        this.payoutAmount  = payoutAmount;
+        this.payoutDate    = payoutDate;
     }
 }
-

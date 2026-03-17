@@ -6,30 +6,33 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
 /**
  * Data access layer for payouts.
+ * Spring Data JPA generates all implementations at runtime.
  */
 @Repository
 public interface PayoutRepository extends JpaRepository<Payout, Long> {
 
     /**
-     * Finds a payout by its business key (transaction id).
+     * Finds a payout by transaction ID.
+     * Used for duplicate detection during bulk ingestion
+     * and for matching during reconciliation.
      */
     Optional<Payout> findByTransactionId(String transactionId);
 
     /**
      * Checks if a payout for the given transaction already exists.
-     * Used for duplicate detection during bulk ingestion.
+     * More efficient than findByTransactionId when only existence matters.
      */
     boolean existsByTransactionId(String transactionId);
 
     /**
      * Loads all payouts within a payout date window.
-     * Note: payoutDate is stored as an ISO-8601 string (YYYY-MM-DD) in the DB,
-     * so lexical ordering matches chronological ordering.
+     * Core query for the reconciliation engine.
      */
     @Query("""
             SELECT p FROM Payout p
@@ -37,14 +40,20 @@ public interface PayoutRepository extends JpaRepository<Payout, Long> {
             ORDER BY p.payoutDate ASC, p.transactionId ASC
             """)
     List<Payout> findByPayoutDateBetween(
-            @Param("startDate") String startDate,
-            @Param("endDate") String endDate
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate")   LocalDate endDate
     );
 
     /**
-     * Finds all payouts for a specific transaction id list.
-     * This is useful for reconciliation lookups.
+     * Finds all payouts for a list of transaction IDs.
+     * Used by the reconciliation engine to bulk-load
+     * payouts matching a set of transactions efficiently.
      */
-    List<Payout> findByTransactionIdIn(List<String> transactionIds);
+    @Query("""
+            SELECT p FROM Payout p
+            WHERE p.transactionId IN :transactionIds
+            """)
+    List<Payout> findByTransactionIdIn(
+            @Param("transactionIds") List<String> transactionIds
+    );
 }
-
